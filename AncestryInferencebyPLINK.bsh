@@ -7,28 +7,24 @@ fi
 refpop=$1
 targetdata=$2
 prefix=$3
-
+     
 echo "Remove all the duplicated variants from study genotype file"
 ./plink2 --bfile ${targetdata} --rm-dup exclude-all --make-bed --out targetdata_nodup
      
 echo "Remove ambiguous variants from the study genotype file"
 awk '$5=="A" && $6=="T" || $5=="T" && $6=="A" || $5=="C" && $6=="G" || $5=="G" && $6=="C"' targetdata_nodup.bim | awk '{print $2}'> targetdata_nodup_ambsnpstoberemoved.txt
 ./plink2 --bfile targetdata_nodup --exclude targetdata_nodup_ambsnpstoberemoved.txt --make-bed --out targetdata_nodup_noambsnps
-
+     
 echo "Find overlapped variants among reference genotype file and study genotype file"
-awk 'BEGIN{while((getline<"data/kgcc.bim")>0)l[$2]=$0}$2 in l{print $0"\t"l[$2]}' targetdata_nodup_noambsnps.bim | awk '$5==$11 && $6==$12 || $5==$12 && $6==$11' | awk '{print $2, $5,$6,$11,$12}' > targetdata_updateallels.txt
-awk '{print $1}' targetdata_updateallels.txt > extract_snps.txt
-
-echo "Update allele information based on the targetdata_updateallels.txt file"
-./plink2 --bfile targetdata_nodup_noambsnps --update-alleles targetdata_updateallels.txt --make-bed --out targetdata_updated
+awk 'BEGIN{while((getline<"data/kgcc.bim")>0)l[$2]=$0}$2 in l{print $0"\t"l[$2]}' targetdata_nodup_noambsnps.bim | awk '$5==$11 && $6==$12 || $5==$12 && $6==$11' | awk '{print $2}' >  extract_snps.txt
+     
 echo "Extract the common SNPs and do LD pruning for study dataset"
-./plink2 --bfile targetdata_updated --extract extract_snps.txt  --indep-pairwise 50 5 0.2 --out snps
-
+./plink2 --bfile targetdata_nodup_noambsnps --extract extract_snps.txt  --indep-pairwise 50 5 0.2 --out snps
+     
 echo "Get the cleaned reference file and study file < targetdatacc and referencedatacc > "
-./plink2 --bfile targetdata_updated --extract snps.prune.in --make-bed --out targetdatacc
+./plink2 --bfile targetdata_nodup_noambsnps --extract snps.prune.in --make-bed --out targetdatacc
 ./plink2 --bfile data/kgcc --extract snps.prune.in --make-bed --out referencedatacc  
-
-
+     
 echo "Export allele frequencies and PCA variant weights from reference dataset"
 ./plink2 --bfile referencedatacc --freq --pca var-wts --out pca_kgcc
 echo "Use --score to compute the necessary dot products with the variant weights."
@@ -46,6 +42,5 @@ rm *.fam
 rm pca_kgcc*
 rm *.log
 rm *prune*
-rm targetdata_*
 echo "Done"
 
