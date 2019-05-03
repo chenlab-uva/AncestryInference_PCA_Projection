@@ -11,7 +11,7 @@ prefix=$3
 echo "Remove all the duplicated variants from study genotype file"
 ./plink2 --bfile ${targetdata} --rm-dup exclude-all --make-bed --out targetdata_nodup
      
-echo "Remove ambiguous variants from the target genotype file"
+echo "Remove ambiguous variants from the study genotype file"
 awk '$5=="A" && $6=="T" || $5=="T" && $6=="A" || $5=="C" && $6=="G" || $5=="G" && $6=="C"' targetdata_nodup.bim | awk '{print $2}'> targetdata_nodup_ambsnpstoberemoved.txt
 ./plink2 --bfile targetdata_nodup --exclude targetdata_nodup_ambsnpstoberemoved.txt --make-bed --out targetdata_nodup_noambsnps
 
